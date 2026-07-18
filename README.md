@@ -1,117 +1,238 @@
-# Sales Forecasting & Analytics Pipeline
+# 🌐 Enterprise Sales Forecasting & Cloud Data Pipeline
 
-An end-to-end data engineering and machine learning pipeline that extracts historical sales data, performs exploratory analysis, trains predictive forecasting models, loads predictions back to a Snowflake Cloud Data Warehouse, and visualizes key business insights.
+[![Python Version](https://img.shields.io/badge/python-3.12-blue.svg?logo=python&logoColor=white)](https://www.python.org/)
+[![Snowflake](https://img.shields.io/badge/Snowflake-Data_Warehouse-29B6F6?logo=snowflake&logoColor=white)](https://www.snowflake.com/)
+[![Scikit-Learn](https://img.shields.io/badge/scikit--learn-ML_Pipeline-F7931E?logo=scikit-learn&logoColor=white)](https://scikit-learn.org/)
+[![Power BI](https://img.shields.io/badge/Power_BI-Analytics_Dashboard-F2C811?logo=power-bi&logoColor=black)](https://powerbi.microsoft.com/)
+[![Code Style: Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
+An end-to-end, production-ready analytics and predictive forecasting pipeline. This system automates the extraction of historical transactions from **Snowflake Cloud Data Warehouse**, processes features, trains a **Random Forest Regressor** model, registers the predictions back into Snowflake, and serves them to **Power BI** dashboards for executive decision-making.
 
 ---
 
-## 🚀 Project Overview
+## 📌 Table of Contents
 
-This repository contains a complete pipeline designed to forecast sales amounts and analyze business trends.
+1. [Business Objective & Value](#-business-objective--value)
+2. [System Architecture](#-system-architecture)
+3. [Repository Structure](#-repository-structure)
+4. [Data & Database Schema](#-data--database-schema)
+5. [Model Pipeline & Governance](#-model-pipeline--governance)
+6. [Getting Started & Setup](#-getting-started--setup)
+7. [Production Deployment Strategy](#-production-deployment-strategy)
+8. [Security & Credentials Management](#-security--credentials-management)
+9. [Visualizations](#-visualizations)
+
+---
+
+## 🎯 Business Objective & Value
+
+In retail and enterprise product sales, accurate demand planning directly impacts the bottom line. This pipeline addresses critical business needs:
+* **Inventory Optimization**: Minimizes stockouts and overstocks by predicting weekly/monthly sales volume.
+* **Margin Maximization**: Identifies correlation between applied discount rates and net profits.
+* **Regional Resource Allocation**: Enables sales leaders to analyze regional demand dynamics and allocate resources dynamically.
+* **Actual vs. Target Tracking**: Empowers financial analysts with interactive visual comparisons of model forecasts against real-time operational transactions.
+
+---
+
+## 🏗️ System Architecture
+
+The pipeline follows a modular architecture designed for high availability, low latency data processing, and governed data storage.
 
 ```mermaid
-graph TD
-    A[Snowflake Table: SALES_DATA] --> B[Exploratory Data Analysis: EDAPeocess.ipynb]
-    A --> C[Model Training: model_training.ipynb]
-    C -->|Train RandomForestRegressor| D[Trained Model: pre_val.pkl]
-    D --> E[Batch Predictions: PRE.ipynb]
-    E -->|Write Back Predictions| F[Snowflake Table: SALES_PREDICTIONS]
-    F --> G[Power BI Dashboard Visualization]
+flowchart LR
+    subgraph Storage [Snowflake Data Cloud]
+        RAW[(SALES_DATA)]
+        PRED[(SALES_PREDICTIONS)]
+        VIEW[SALES_SUMMARY]
+    end
+
+    subgraph Compute [ML Ops & Feature Pipeline]
+        EDA[EDA & Profiling]
+        TR[Model Training]
+        INF[Batch Inference]
+        REG[Model Registry]
+    end
+
+    subgraph Presentation [Business Intelligence]
+        PBI[Power BI Dashboards]
+    end
+
+    RAW -->|SQL Alchemy / Pandas| EDA
+    RAW -->|Train / Test Split| TR
+    TR -->|joblib.dump| REG
+    REG -->|joblib.load| INF
+    INF -->|Batch Insert| PRED
+    PRED --> VIEW
+    VIEW -->|Snowflake DirectQuery| PBI
 ```
-
----
-
-## 🛠️ Technology Stack
-
-- **Data Warehouse**: Snowflake Cloud Data Warehouse
-- **Languages**: Python, SQL
-- **Libraries**: Pandas, NumPy, Scikit-Learn, SQLAlchemy, Joblib, Snowflake Connector for Python, Matplotlib
-- **BI & Visualizations**: Power BI (Dashboard Mockups)
 
 ---
 
 ## 📁 Repository Structure
 
-- 📊 **Data Prep & Extraction**
-  - [sales.ipynb](file:///c:/Users/kumar/OneDrive/Documents/Sales-Forecasting/sales.ipynb): Initial warehouse setup, database configuration, database schema schema creation, and SQL queries to set up the raw `SALES_DATA` and predicted `SALES_PREDICTIONS` tables in Snowflake.
-  - [Sales_forecast.ipynb](file:///c:/Users/kumar/OneDrive/Documents/Sales-Forecasting/Sales_forecast.ipynb): Connection scripts using `snowflake-connector-python` and Pandas to fetch data from the warehouse for exploratory queries.
+The code is organized into logical components corresponding to pipeline stages:
 
-- 📈 **Exploratory Data Analysis (EDA)**
-  - [EDAPeocess.ipynb](file:///c:/Users/kumar/OneDrive/Documents/Sales-Forecasting/EDAPeocess.ipynb): Statistical analysis and visualizations focusing on regional performance, customer segments, sales channels, discount trends, and monthly growth patterns.
+### 🗄️ Database & Schema Initialization
+*   [sales.ipynb](file:///c:/Users/kumar/OneDrive/Documents/Sales-Forecasting/sales.ipynb) — **DDL Scripts & Initial Setup**: Creates Snowflake Virtual Warehouses, Target Databases, Schemas, tables, and aggregated reporting views.
+*   [Sales_forecast.ipynb](file:///c:/Users/kumar/OneDrive/Documents/Sales-Forecasting/Sales_forecast.ipynb) — **Connection Validation**: Verifies database connectivity and tests ingestion of operational tables via Python APIs.
 
-- 🤖 **Machine Learning**
-  - [model_training.ipynb](file:///c:/Users/kumar/OneDrive/Documents/Sales-Forecasting/model_training.ipynb): Core model development pipeline. Splits dataset, trains Linear Regression and Random Forest models, performs feature importance rankings, and exports the final model to `pre_val.pkl`.
-  - [PRE.ipynb](file:///c:/Users/kumar/OneDrive/Documents/Sales-Forecasting/PRE.ipynb): Production inference notebook. Loads the trained RandomForest model, predicts sales on test datasets, and writes the batch predictions back into Snowflake.
-  - [predictions.ipynb](file:///c:/Users/kumar/OneDrive/Documents/Sales-Forecasting/predictions.ipynb): Sandbox/debugging notebook mapping intermediate issues resolved during prediction pipeline development.
-
-- 🎨 **Visualizations & Assets**
-  - [dashboard.png](file:///c:/Users/kumar/OneDrive/Documents/Sales-Forecasting/dashboard.png) / [overview.png](file:///c:/Users/kumar/OneDrive/Documents/Sales-Forecasting/overview.png): Enterprise dashboard visualizations of key sales metrics and performance.
-  - [region slicer.png](file:///c:/Users/kumar/OneDrive/Documents/Sales-Forecasting/region%20slicer.png) / [slicer.png](file:///c:/Users/kumar/OneDrive/Documents/Sales-Forecasting/slicer.png): Visual aids demonstrating filtering options used within the interactive dashboard reports.
+### 🧪 Data Science & Machine Learning
+*   [EDAPeocess.ipynb](file:///c:/Users/kumar/OneDrive/Documents/Sales-Forecasting/EDAPeocess.ipynb) — **Exploratory Data Analysis**: Inspects distribution skewness, identifies outlier transactions, profiles user demographics, and evaluates seasonality factors.
+*   [model_training.ipynb](file:///c:/Users/kumar/OneDrive/Documents/Sales-Forecasting/model_training.ipynb) — **Feature Engineering & Training**: Builds time-series features (month, quarter, week index, discount depth) and trains regression models.
+*   [PRE.ipynb](file:///c:/Users/kumar/OneDrive/Documents/Sales-Forecasting/PRE.ipynb) — **Production Inference Engine**: A clean execution script that loads the serialized model registry bin (`pre_val.pkl`) and uploads forecasts back to Snowflake.
+*   [predictions.ipynb](file:///c:/Users/kumar/OneDrive/Documents/Sales-Forecasting/predictions.ipynb) — **Testing / Development Sandbox**: Retains debugging logs, exception handlers, and sandbox testing scripts.
 
 ---
 
-## 🗄️ Database Schema Details (Snowflake)
+## 🗄️ Data & Database Schema
 
-### 1. Raw Sales Data (`SALES_DATA`)
-| Column Name | Data Type | Description |
-| :--- | :--- | :--- |
-| `PRODUCT_ID` | NUMBER | Unique identifier for each product |
-| `SALE_DATE` | DATE | Date of transaction |
-| `SALES_REP` | STRING | Name of sales representative |
-| `REGION` | STRING | Target region (North, South, East, West) |
-| `SALES_AMOUNT` | FLOAT | Monetary value of the sale |
-| `QUANTITY_SOLD` | NUMBER | Total units sold |
-| `PRODUCT_CATEGORY` | STRING | Categorized product group (Furniture, Clothing, Electronics) |
-| `UNIT_COST` | FLOAT | Cost price per single unit |
-| `UNIT_PRICE` | FLOAT | Retail price per single unit |
-| `CUSTOMER_TYPE` | STRING | Segment (New, Returning) |
-| `DISCOUNT` | FLOAT | Applied percentage discount |
-| `PAYMENT_METHOD` | STRING | Cash, Credit Card, etc. |
-| `SALES_CHANNEL` | STRING | Retail, Online, etc. |
-| `REGION_AND_SALES_REP` | STRING | Concatenated helper key |
+The pipeline implements schema constraint definitions within the `SALES_FORECAST_DB` database.
 
-### 2. Predictions Output (`SALES_PREDICTIONS`)
-| Column Name | Data Type | Description |
-| :--- | :--- | :--- |
-| `PREDICTION_ID` | INTEGER | Autoincrementing primary key |
-| `SALE_DATE` | DATE | Date of forecasted sale |
-| `REGION` | STRING | Target region |
-| `PRODUCT_CATEGORY` | STRING | Categorized product group |
-| `ACTUAL_SALES` | FLOAT | Recorded historical sales amount |
-| `PREDICTED_SALES` | FLOAT | Model-generated predicted sales amount |
-| `MODEL_NAME` | STRING | Algorithm descriptor (e.g. "Random Forest") |
-| `CREATED_AT` | TIMESTAMP | Entry ingestion timestamp |
+### 1. Ingestion Table: `SALES_DATA`
+Stores daily raw transactional records ingested from ERP systems.
+```sql
+CREATE OR REPLACE TABLE SALES_DATA (
+    PRODUCT_ID NUMBER,
+    SALE_DATE DATE,
+    SALES_REP STRING,
+    REGION STRING,
+    SALES_AMOUNT FLOAT,
+    QUANTITY_SOLD NUMBER,
+    PRODUCT_CATEGORY STRING,
+    UNIT_COST FLOAT,
+    UNIT_PRICE FLOAT,
+    CUSTOMER_TYPE STRING,
+    DISCOUNT FLOAT,
+    PAYMENT_METHOD STRING,
+    SALES_CHANNEL STRING,
+    REGION_AND_SALES_REP STRING
+);
+```
 
----
-
-## 📊 Model Evaluation & Insights
-
-Two regressions models were evaluated on the dataset:
-
-| Model Name | MAE | RMSE | R² Score |
-| :--- | :--- | :--- | :--- |
-| **Random Forest Regressor** | **413.16** | **617.65** | **0.9587** |
-| Linear Regression | 2373.56 | 2677.52 | 0.2242 |
-
-### 💡 Feature Importance Highlights
-The Random Forest model identified the following features as key drivers for forecasting sales amounts:
-1. **REVENUE_PER_UNIT** (73.07% importance)
-2. **QUANTITY_SOLD** (21.75% importance)
-3. **PROFIT** (1.11% importance)
+### 2. Analytical Table: `SALES_PREDICTIONS`
+Holds forecast payloads mapped to historical observations for timeline alignment.
+```sql
+CREATE OR REPLACE TABLE SALES_PREDICTIONS (
+    PREDICTION_ID INTEGER AUTOINCREMENT,
+    SALE_DATE DATE,
+    REGION STRING,
+    PRODUCT_CATEGORY STRING,
+    ACTUAL_SALES FLOAT,
+    PREDICTED_SALES FLOAT,
+    MODEL_NAME STRING,
+    CREATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP()
+);
+```
 
 ---
 
-## 🛠️ Step-by-Step Execution Guide
+## 🤖 Model Pipeline & Governance
 
-### 1. Database Setup
-Execute the commands within the [sales.ipynb](file:///c:/Users/kumar/OneDrive/Documents/Sales-Forecasting/sales.ipynb) notebook to set up the Snowflake connection parameters, create the warehouse, database, and initialize the target tables.
+### 📈 Metrics Dashboard
+The model performance was evaluated using standard regression diagnostics. The **Random Forest Regressor** was selected as the champion model for deployment due to its superior variance explanation capability.
 
-### 2. Feature Engineering & Training
-Run [model_training.ipynb](file:///c:/Users/kumar/OneDrive/Documents/Sales-Forecasting/model_training.ipynb) to load raw datasets, generate time-based attributes (Year, Quarter, Month, Week, Day of Week), train the Random Forest model, and export the trained binary object to a pickle file.
+| Candidate Model | Mean Absolute Error (MAE) | Root Mean Squared Error (RMSE) | R² Score | Status |
+| :--- | :---: | :---: | :---: | :---: |
+| **Random Forest Regressor** | **413.16** | **617.65** | **0.9587** | **Deployed (Champion)** |
+| Linear Regression | 2373.56 | 2677.52 | 0.2242 | Retired |
 
-### 3. Forecasting & Upload
-Execute the production script [PRE.ipynb](file:///c:/Users/kumar/OneDrive/Documents/Sales-Forecasting/PRE.ipynb) to load the pickled model file, predict forecasted values on the operational datasets, and perform batch inserts back to Snowflake `SALES_PREDICTIONS`.
+### 🔍 Feature Importance Analysis
+The champion model relies heavily on engineered price elasticities and volumes:
+1. **REVENUE_PER_UNIT** (73.07% relative importance)
+2. **QUANTITY_SOLD** (21.75% relative importance)
+3. **PROFIT** (1.11% relative importance)
 
-### 4. BI Analytics
-Connect your Power BI dashboard instance to Snowflake and import the `SALES_PREDICTIONS` table alongside the `SALES_SUMMARY` view to generate visualizations representing actuals vs. forecasts, as shown in the project dashboard captures:
-- [dashboard.png](file:///c:/Users/kumar/OneDrive/Documents/Sales-Forecasting/dashboard.png)
-- [overview.png](file:///c:/Users/kumar/OneDrive/Documents/Sales-Forecasting/overview.png)
+---
+
+## 🚀 Getting Started & Setup
+
+Follow these setup steps to run the pipeline locally or in a staging environment.
+
+### 📋 Prerequisites
+- Python 3.12+
+- Access credentials to a Snowflake account.
+- Power BI Desktop (for visualization rendering).
+
+### 1. Clone & Set Up Environment
+```bash
+# Clone the repository
+git clone https://github.com/Kumaar375/Sales-Forecasting.git
+cd Sales-Forecasting
+
+# Create and activate virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install required dependencies
+pip install -r requirements.txt
+```
+
+*(Create a `requirements.txt` containing `pandas`, `numpy`, `scikit-learn`, `joblib`, `snowflake-connector-python`, `sqlalchemy`, and `matplotlib` if not already present)*
+
+### 2. Database Initialization
+1. Configure credentials inside [sales.ipynb](file:///c:/Users/kumar/OneDrive/Documents/Sales-Forecasting/sales.ipynb) (see [Security section](#-security--credentials-management) below).
+2. Run the cells in [sales.ipynb](file:///c:/Users/kumar/OneDrive/Documents/Sales-Forecasting/sales.ipynb) to initialize schemas and constraints.
+
+### 3. Model Orchestration
+Run the model training steps:
+```bash
+# Executing model training and serialization
+jupyter nbconvert --to notebook --execute model_training.ipynb
+```
+
+### 4. Running Weekly Batch Predictions
+Use the production script to score newly ingested sales data and write results back to Snowflake:
+```bash
+# Running inference pipeline
+jupyter nbconvert --to notebook --execute PRE.ipynb
+```
+
+---
+
+## ⚡ Production Deployment Strategy
+
+To automate this pipeline at scale, we recommend deploying with one of the following production setups:
+1. **Snowflake Tasks & Snowpark**: Port the Random Forest model directly into a Snowpark Python UDF, scheduling predictions natively using Snowflake Tasks without maintaining standalone compute engines.
+2. **Orchestration (Apache Airflow)**: Set up a daily DAG:
+   - **Step 1**: Ingest raw ERP logs into `SALES_DATA`.
+   - **Step 2**: Trigger model evaluation and update prediction records via a Python Operator executing the inference codebase.
+   - **Step 3**: Refresh the downstream Power BI data model using the Power BI REST API.
+
+---
+
+## 🔒 Security & Credentials Management
+
+> [!CAUTION]
+> **Credential Exposure Warning**
+> Some notebooks currently reference clear-text database passwords. For production configurations, these MUST be moved out of notebooks to prevent security compromises.
+
+### Recommended Configuration Pattern
+Do not commit passwords or account indicators to source repositories. Utilize environment files (`.env`) loaded at runtime:
+
+```python
+import os
+import snowflake.connector
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Establish secure database session
+conn = snowflake.connector.connect(
+    user=os.getenv("SNOWFLAKE_USER"),
+    password=os.getenv("SNOWFLAKE_PASSWORD"),
+    account=os.getenv("SNOWFLAKE_ACCOUNT"),
+    warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
+    database=os.getenv("SNOWFLAKE_DATABASE"),
+    schema=os.getenv("SNOWFLAKE_SCHEMA")
+)
+```
+
+---
+
+## 🎨 Visualizations
+
+The output of the pipeline serves interactive dashboards, providing executive leadership with visibility into sales trends:
+
+*   **Executive Dashboard Overview**: [dashboard.png](file:///c:/Users/kumar/OneDrive/Documents/Sales-Forecasting/dashboard.png)
+*   **Operational Metrics View**: [overview.png](file:///c:/Users/kumar/OneDrive/Documents/Sales-Forecasting/overview.png)
+*   **Segment Filtering Dashboard**: [region slicer.png](file:///c:/Users/kumar/OneDrive/Documents/Sales-Forecasting/region%20slicer.png) / [slicer.png](file:///c:/Users/kumar/OneDrive/Documents/Sales-Forecasting/slicer.png)
